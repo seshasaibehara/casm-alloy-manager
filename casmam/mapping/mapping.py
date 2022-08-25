@@ -154,7 +154,7 @@ def default_parent_crystal_structures_with_paths() -> tuple[
             casm.xtal.Prim.from_poscar(str(file)),
             str(file),
         )
-        for file in importlib.resources.files("casmam.xtallib.frequent").iterdir()
+        for file in importlib.resources.files("casmam.xtallib.common").iterdir()
         if ".vasp" in str(file)
     ]
 
@@ -340,7 +340,7 @@ def map_configurations_onto_parent_structures(
     """
     # sanitize kwargs
     if isinstance(parent_paths, str):
-        if parent_paths == "frequent":
+        if parent_paths == "common":
             (
                 parent_structures,
                 parent_paths,
