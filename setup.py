@@ -9,7 +9,7 @@ setuptools.setup(
         "casmam.scripts",
         "casmam.mapping",
         "casmam.xtallib",
-        "casmam.xtallib.top5",
+        "casmam.xtallib.common",
     ],
     package_data={"": ["*.vasp"]},
     entry_points={

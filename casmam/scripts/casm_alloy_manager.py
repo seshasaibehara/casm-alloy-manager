@@ -12,13 +12,13 @@ def main():
     subparser = parser.add_subparsers(dest="command")
 
     # map command
-    predict = subparser.add_parser(
-        "predict",
+    mapper = subparser.add_parser(
+        "map",
         help="Maps relaxed structures of a casm project to a set of parent crystal structures and predicts the best parent crystal structure for every configuration",
     )
 
     # List of configurations in ccasm query json format
-    predict.add_argument(
+    mapper.add_argument(
         "--configurations",
         "-c",
         type=str,
@@ -28,7 +28,7 @@ def main():
 
     # outfile name. If outfile name is *.html, results will be written out to html file
     # If outfile name is *.hdf, results will be written to hdf file
-    predict.add_argument(
+    mapper.add_argument(
         "--outfile",
         "-o",
         type=str,
@@ -36,7 +36,7 @@ def main():
         help="Output file name (a pandas dataframe dumped as a hdf5/html) file",
     )
 
-    predict.add_argument(
+    mapper.add_argument(
         "--configtype",
         nargs="?",
         type=str,
@@ -46,7 +46,7 @@ def main():
     )
 
     # ignored if reading unrelaxed structure.json files
-    predict.add_argument(
+    mapper.add_argument(
         "--calctype",
         nargs="?",
         type=str,
@@ -55,21 +55,38 @@ def main():
     )
 
     # TODO: Add option for user to give parent crystal structures
-    # TODO: Rename top5
-    predict.add_argument(
+    mapper.add_argument(
         "--parents",
         "-p",
         nargs="?",
         type=str,
-        default="frequent",
-        choices=["all", "frequent"],
+        default="common",
+        choices=["all", "common"],
         help="What parent structures to use",
+    )
+    # TODO: Add input settings to mapping arguments
+    # TODO: Add input settings to orgainizing mapping results
+
+    # analyze command
+    analyze = subparser.add_parser(
+        "analyze",
+        help="Analyzes the given mapping results and finds best map to each of the configurations",
+    )
+
+    # TODO: what to do if it's html
+    analyze.add_argument(
+        "--infile", "-i", type=str, required=True, help="Mapping results as hdf5 file"
+    )
+
+    # TODO: need a html argument?
+    analyze.add_argument(
+        "--outfile", "-o", type=str, required=True, help="Output file name"
     )
 
     args = parser.parse_args()
 
     # read configurations
-    if args.command == "predict":
+    if args.command == "map":
 
         with open(args.configurations, "r") as f:
             configs = json.load(f)
@@ -96,6 +113,12 @@ def main():
 
         if ".hdf" in args.outfile:
             mapping_results.to_hdf(args.outfile, key="mapping_results")
+
+    if args.command == "analyze":
+        mapping_results = pd.read_hdf(args.infile)
+        best_maps = casmam.mapping.mapping.analyze_mapping_data(mapping_results)
+
+        best_maps.to_hdf(args.outfile, key="best_maps")
 
 
 if __name__ == "main":
