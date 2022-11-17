@@ -7,6 +7,21 @@ import pandas as pd
 warnings.filterwarnings("ignore", category=pd.io.pytables.PerformanceWarning)
 
 
+def function(arg1):
+    """TODO: Docstring for function.
+
+    Parameters
+    ----------
+    arg1 : TODO
+
+    Returns
+    -------
+    TODO
+
+    """
+    pass
+
+
 def main():
     parser = argparse.ArgumentParser("casm-alloy-manager")
     subparser = parser.add_subparsers(dest="command")
@@ -45,7 +60,6 @@ def main():
         help="What to read. If relaxed will read properties.calc.json, if unrelaxed will read structure.json",
     )
 
-    # ignored if reading unrelaxed structure.json files
     mapper.add_argument(
         "--calctype",
         nargs="?",

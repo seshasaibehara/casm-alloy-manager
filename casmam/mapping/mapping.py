@@ -1,12 +1,12 @@
 import os
 import json
-import casm.xtal
 import numpy as np
+import libcasm.xtal
 import pandas as pd
 import importlib.resources
 import casmam.xtal.xtal as casmamxtal
-import casm.mapping.info as mapperinfo
-import casm.mapping.methods as mappermethods
+import libcasm.mapping.info as mapperinfo
+import libcasm.mapping.methods as mappermethods
 
 
 class MappingResult:
@@ -139,19 +139,19 @@ def get_casm_root_dir() -> str:
 
 
 def default_parent_crystal_structures_with_paths() -> tuple[
-    list[casm.xtal.Prim], list[str]
+    list[libcasm.xtal.Prim], list[str]
 ]:
     """Makes casm ``Prim`` for BCC, FCC, HCP, Omega, SC, DHCP
 
     Returns
     -------
-    List[casm.xtal.Prim]
+    List[libcasm.xtal.Prim]
         A list of casm ``Prim`` which can be used as an input for mapping
 
     """
     prims_with_names = [
         (
-            casm.xtal.Prim.from_poscar(str(file)),
+            libcasm.xtal.Prim.from_poscar(str(file)),
             str(file),
         )
         for file in importlib.resources.files("casmam.xtallib.common").iterdir()
@@ -165,20 +165,20 @@ def default_parent_crystal_structures_with_paths() -> tuple[
 
 
 def all_parent_crystal_structures_with_paths() -> tuple[
-    list[casm.xtal.Prim], list[str]
+    list[libcasm.xtal.Prim], list[str]
 ]:
     """Makes casm ``Prim`` for all the parent crystals from
     Sanjeev's database
 
     Returns
     -------
-    List[casm.xtal.Prim]
+    List[libcasm.xtal.Prim]
 
     """
     prims_with_names = default_parent_crystal_structures_with_paths()
     prims_with_names += [
         (
-            casm.xtal.Prim.from_poscar(str(file)),
+            libcasm.xtal.Prim.from_poscar(str(file)),
             str(file),
         )
         for file in importlib.resources.files("casmam.xtallib").iterdir()
@@ -191,7 +191,7 @@ def all_parent_crystal_structures_with_paths() -> tuple[
     return prims, paths
 
 
-def max_vol(parent: casm.xtal.Prim, child: casm.xtal.Structure) -> int | None:
+def max_vol(parent: libcasm.xtal.Prim, child: libcasm.xtal.Structure) -> int | None:
     """Returns if number of atoms in child is divisible by number of atoms
     in parent structure. Mapping algorithm by default finds supercells of parent,
     but not child. If number of atoms in child is not divisible by parent,
@@ -199,9 +199,9 @@ def max_vol(parent: casm.xtal.Prim, child: casm.xtal.Structure) -> int | None:
 
     Parameters
     ----------
-    parent : casm.xtal.Prim
+    parent : libcasm.xtal.Prim
         casm ``Prim`` of a parent crystal structure
-    child : casm.xtal.Structure
+    child : libcasm.xtal.Structure
         casm ``Structure`` of a child crystal structure
 
     Returns
@@ -221,14 +221,14 @@ def max_vol(parent: casm.xtal.Prim, child: casm.xtal.Structure) -> int | None:
 
 
 def mask_child_structure_atom_types(
-    child_structures: list[casm.xtal.Structure], masking_atom_type: str = "A"
-) -> list[casm.xtal.Structure]:
+    child_structures: list[libcasm.xtal.Structure], masking_atom_type: str = "A"
+) -> list[libcasm.xtal.Structure]:
     """Given a list of child structures, change the atom types at all sites
     in all of the structures to ``masking_atom_type`` which is "A"
 
     Parameters
     ----------
-    child_structures : List[casm.xtal.Structure]
+    child_structures : List[libcasm.xtal.Structure]
         List of child structures to change the atom type
     masking_atom_type : str, optional
         Replace atom type at each site to ``masking_atom_type``
@@ -236,7 +236,7 @@ def mask_child_structure_atom_types(
 
     Returns
     -------
-    List[casm.xtal.Structure]
+    List[libcasm.xtal.Structure]
         List of child structures with atom type at each site to ``masking_atom_type``
 
     """
@@ -248,7 +248,7 @@ def mask_child_structure_atom_types(
     ]
 
 
-def get_child_structures(child_paths: list[str]) -> list[casm.xtal.Structure]:
+def get_child_structures(child_paths: list[str]) -> list[libcasm.xtal.Structure]:
     """Given a list of child paths, if the file type is json,
     it assumes it's of proeprties.calc.json/structure.json type
     and constructs a casm ``Structure``
@@ -260,7 +260,7 @@ def get_child_structures(child_paths: list[str]) -> list[casm.xtal.Structure]:
 
     Returns
     -------
-    list[casm.xtal.Structure]
+    list[libcasm.xtal.Structure]
         List of casm ``Structure`` objects
 
     """
@@ -354,7 +354,7 @@ def map_configurations_onto_parent_structures(
 
     if isinstance(parent_paths, list):
         parent_structures = [
-            casm.xtal.Prim.from_poscar(parent_path) for parent_path in parent_paths
+            libcasm.xtal.Prim.from_poscar(parent_path) for parent_path in parent_paths
         ]
 
     # parent_paths = [os.path.basename(path) for path in parent_paths]
@@ -391,8 +391,8 @@ def default_mapping_options() -> dict:
 
 
 def map_child_structures_onto_parent_structures(
-    parent_structures: list[casm.xtal.Prim],
-    child_structures: list[casm.xtal.Structure],
+    parent_structures: list[libcasm.xtal.Prim],
+    child_structures: list[libcasm.xtal.Structure],
     parent_paths: list[str] = None,
     child_paths: list[str] = None,
     quiet=True,
@@ -407,9 +407,9 @@ def map_child_structures_onto_parent_structures(
 
     Parameters
     ----------
-    parent_structures : List[casm.xtal.Prim]
+    parent_structures : List[libcasm.xtal.Prim]
         List of parent crystal structures as casm ``Prim``
-    child_structures : List[casm.xtal.Structure]
+    child_structures : List[libcasm.xtal.Structure]
         List of child crystal structures as casm ``Structure``
     **kwargs : TODO
 
@@ -428,12 +428,12 @@ def map_child_structures_onto_parent_structures(
     mapping_results = []
 
     for child_structure, child_path in zip(child_structures, child_paths):
-        child_fg = casm.xtal.make_structure_factor_group(child_structure)
+        child_fg = libcasm.xtal.make_structure_factor_group(child_structure)
 
         mapping_results_for_one_child = []
         for parent_structure, parent_path in zip(parent_structures, parent_paths):
             # make child structure factor group
-            parent_fg = casm.xtal.make_prim_factor_group(parent_structure)
+            parent_fg = libcasm.xtal.make_prim_factor_group(parent_structure)
             # map child onto parent
             max_volume = max_vol(parent_structure, child_structure)
             if max_volume is not None:
