@@ -1,1 +1,4 @@
-numpy>=1.21.2
+numpy
+pandas
+libcasm-xtal
+libcasm-mapping
