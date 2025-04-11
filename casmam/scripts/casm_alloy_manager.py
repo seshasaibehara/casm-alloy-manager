@@ -7,21 +7,6 @@ import pandas as pd
 warnings.filterwarnings("ignore", category=pd.io.pytables.PerformanceWarning)
 
 
-def function(arg1):
-    """TODO: Docstring for function.
-
-    Parameters
-    ----------
-    arg1 : TODO
-
-    Returns
-    -------
-    TODO
-
-    """
-    pass
-
-
 def main():
     parser = argparse.ArgumentParser("casm-alloy-manager")
     subparser = parser.add_subparsers(dest="command")
@@ -32,14 +17,30 @@ def main():
         help="Maps relaxed structures of a casm project to a set of parent crystal structures and predicts the best parent crystal structure for every configuration",
     )
 
-    # TODO: Can also be a list of input files to child structures
-    # List of configurations in ccasm query json format
     mapper.add_argument(
-        "--infine",
-        "-i",
+        "--child",
+        "-c",
         type=str,
         required=True,
-        help="List of configurations in ccasm query json format",
+        help="A file containing a list of where relaxed/child structures can be found",
+    )
+
+    mapper.add_argument(
+        "--parents",
+        "-p",
+        nargs="?",
+        type=str,
+        default="common",
+        choices=["all", "common"],
+        help="What parent structures to use",
+    )
+
+    mapper.add_argument(
+        "--settings",
+        "-s",
+        type=str,
+        default=None,
+        help="All settings to be passed onto the mapper",
     )
 
     # outfile name. If outfile name is *.html, results will be written out to html file
@@ -52,78 +53,38 @@ def main():
         help="Output file name (a pandas dataframe dumped as a hdf5/html) file",
     )
 
-    mapper.add_argument(
-        "--calctype",
-        nargs="?",
-        type=str,
-        default="default",
-        help="calctype from where to read the properties",
-    )
-
-    mapper.add_argument(
-        "--parents",
-        "-p",
-        nargs="?",
-        type=str,
-        default="common",
-        choices=["all", "common"],
-        help="What parent structures to use",
-    )
-    # TODO: Add input settings to mapping arguments
-    # TODO: Add input settings to orgainizing mapping results
-
-    # analyze command
-    analyze = subparser.add_parser(
-        "analyze",
-        help="Analyzes the given mapping results and finds best map to each of the configurations",
-    )
-
-    # TODO: what to do if it's html
-    analyze.add_argument(
-        "--infile", "-i", type=str, required=True, help="Mapping results as a hdf5 file"
-    )
-
-    # TODO: need a html argument?
-    analyze.add_argument(
-        "--outfile", "-o", type=str, required=True, help="Output file name"
-    )
-
     args = parser.parse_args()
 
-    # read configurations
     if args.command == "map":
 
-        with open(args.configurations, "r") as f:
-            configs = json.load(f)
+        if args.settings is not None:
+            with open(args.settings, "r") as f:
+                settings = json.load(f)
 
-        config_names = [config["name"] for config in configs]
+        else:
+            settings = {}
 
-        if args.configtype == "relaxed":
-            relaxed = True
-        if args.configtype == "unrelaxed":
-            relaxed = False
-        # construct child structures to be used in mapping
-        # get child properties paths
-        child_paths = casmam.mapping.mapping.get_properties_json_paths(
-            config_names, args.calctype, relaxed
-        )
-        mapping_results = (
-            casmam.mapping.mapping.map_configurations_onto_parent_structures(
-                child_paths, args.parents
+        # read child structure paths
+        with open(args.child, "r") as f:
+            child_structure_paths = f.read().splitlines()
+
+        # read parent structure paths
+        if not (args.parents == "all" or args.parents == "common"):
+            with open(args.parents, "r") as f:
+                parent_structure_paths = f.read().splitlines()
+            mapping_results = casmam.map.map(
+                child_structure_paths, parent_structure_paths, **settings
             )
-        )
+        else:
+            mapping_results = casmam.map.map(
+                child_structure_paths, args.parents, **settings
+            )
 
         if ".html" in args.outfile:
             mapping_results.to_html(args.outfile)
 
         if ".hdf" in args.outfile:
             mapping_results.to_hdf(args.outfile, key="mapping_results")
-
-    if args.command == "analyze":
-        mapping_results = pd.read_hdf(args.infile)
-        best_maps = casmam.mapping.mapping.analyze_mapping_data(mapping_results)
-
-        best_maps.to_hdf(args.outfile, key="best_maps")
 
 
 if __name__ == "main":

@@ -5,9 +5,7 @@ setuptools.setup(
     version="0.0.1",
     packages=[
         "casmam",
-        "casmam.xtal",
         "casmam.scripts",
-        "casmam.mapping",
         "casmam.xtallib",
         "casmam.xtallib.common",
     ],
