@@ -32,10 +32,11 @@ def main():
         help="Maps relaxed structures of a casm project to a set of parent crystal structures and predicts the best parent crystal structure for every configuration",
     )
 
+    # TODO: Can also be a list of input files to child structures
     # List of configurations in ccasm query json format
     mapper.add_argument(
-        "--configurations",
-        "-c",
+        "--infine",
+        "-i",
         type=str,
         required=True,
         help="List of configurations in ccasm query json format",
@@ -52,15 +53,6 @@ def main():
     )
 
     mapper.add_argument(
-        "--configtype",
-        nargs="?",
-        type=str,
-        default="relaxed",
-        choices=["relaxed", "unrelaxed"],
-        help="What to read. If relaxed will read properties.calc.json, if unrelaxed will read structure.json",
-    )
-
-    mapper.add_argument(
         "--calctype",
         nargs="?",
         type=str,
@@ -68,7 +60,6 @@ def main():
         help="calctype from where to read the properties",
     )
 
-    # TODO: Add option for user to give parent crystal structures
     mapper.add_argument(
         "--parents",
         "-p",
@@ -89,7 +80,7 @@ def main():
 
     # TODO: what to do if it's html
     analyze.add_argument(
-        "--infile", "-i", type=str, required=True, help="Mapping results as hdf5 file"
+        "--infile", "-i", type=str, required=True, help="Mapping results as a hdf5 file"
     )
 
     # TODO: need a html argument?

@@ -84,22 +84,6 @@ def casm_prim_from_properties_json(properties_json: dict) -> libcasm.xtal.Prim:
     return libcasm.xtal.Prim(casm_lattice, frac_coords, atom_dofs)
 
 
-# def casm_structure_from_poscar(arg1):
-#    """TODO: Docstring for casm_structure_from_poscar.
-#    Need this function is libcasm.xtal.Structure
-#
-#    Parameters
-#    ----------
-#    arg1 : TODO
-#
-#    Returns
-#    -------
-#    TODO
-#
-#    """
-#    pass
-
-
 def change_atom_types_in_casm_structure(
     casm_structure: libcasm.xtal.Structure, atom_types: list[str]
 ) -> libcasm.xtal.Structure:

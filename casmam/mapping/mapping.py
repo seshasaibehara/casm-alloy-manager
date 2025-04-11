@@ -5,21 +5,18 @@ import libcasm.xtal
 import pandas as pd
 import importlib.resources
 import casmam.xtal.xtal as casmamxtal
-import libcasm.mapping.info as mapperinfo
 import libcasm.mapping.methods as mappermethods
 
 
 class MappingResult:
-
     """An object containing all the mapping result
-    info and which can be dumped as a picke
-
+    info and which can be dumped as a pickle or json
+    if needed
     """
 
     def __init__(self):
-        """TODO: to be defined."""
-        self.parent_path = "not available"
-        self.child_path = "not available"
+        self.parent_path = "unavailable"
+        self.child_path = "unavailable"
 
         # mapping costs
         self.atomic_cost = np.nan
@@ -40,22 +37,29 @@ class MappingResult:
         self.permutation = np.nan
         self.translation = np.nan
 
-    def is_dummy(self):
-        """Returns if MappingResult is a dummy
+    def is_dummy(self) -> bool:
+        """
+        Returns if MappingResult is a dummy
+        by checking if the total_cost in
+        np.nan
 
         Returns
         -------
-        TODO
-
+        bool
+            True if total_cost is nan,
+            or false if total_cost in not
+            nan
         """
         return np.isnan(self.total_cost)
 
-    def __str__(self):
-        """TODO: Docstring for __str__.
+    def __str__(self) -> str:
+        """Returns a string that will be useful
+        for printing the MappingResult object
 
         Returns
         -------
-        TODO
+        str
+            Retuns the Total mapping cost
 
         """
         string = "Total mapping cost is: "
@@ -65,21 +69,22 @@ class MappingResult:
     @classmethod
     def from_casm_mapping_result(
         cls,
-        casm_mapping_result: tuple[
-            mapperinfo.StructureMappingCost, mapperinfo.StructureMapping
-        ],
-        parent_path="Not available",
-        child_path="Not available",
-    ):
-        """TODO: Docstring for from_casm_mapping_result.
+        casm_mapping_result: libcasm.mapping.info.ScoredStructureMapping,
+        parent_path="unavailable",
+        child_path="unavailable",
+    ) -> "MappingResult":
+        """Construct MappingResult from casm ScoredStructureMapping
+        result
 
         Parameters
         ----------
-        casm_mapping_result: TODO
+        casm_mapping_result : libcasm.mapping.info.ScoredStructureMapping
+        parent_path : str, optional
+        child_path : str, optional
 
         Returns
         -------
-        TODO
+        MappingResult
 
         """
         result = cls()
@@ -88,12 +93,12 @@ class MappingResult:
         result.child_path = child_path
 
         # populate mapping costs
-        result.atomic_cost = casm_mapping_result[0].atom_cost()
-        result.lattice_cost = casm_mapping_result[0].lattice_cost()
-        result.total_cost = casm_mapping_result[0].total_cost()
+        result.atomic_cost = casm_mapping_result.atom_cost()
+        result.lattice_cost = casm_mapping_result.lattice_cost()
+        result.total_cost = casm_mapping_result.total_cost()
 
         # populate lattice mapping attributes
-        lattice_mapping = casm_mapping_result[1].lattice_mapping()
+        lattice_mapping = casm_mapping_result.lattice_mapping()
         result.deformation_gradient = lattice_mapping.deformation_gradient()
         result.transformation_matrix_to_super = (
             lattice_mapping.transformation_matrix_to_super()
@@ -103,7 +108,7 @@ class MappingResult:
         result.left_stretch = lattice_mapping.left_stretch()
 
         # populate atom mapping attributes
-        atom_mapping = casm_mapping_result[1].atom_mapping()
+        atom_mapping = casm_mapping_result.atom_mapping()
         result.displacement = atom_mapping.displacement()
         result.permutation = atom_mapping.permutation()
         result.translation = atom_mapping.translation()
@@ -196,6 +201,8 @@ def max_vol(parent: libcasm.xtal.Prim, child: libcasm.xtal.Structure) -> int | N
     in parent structure. Mapping algorithm by default finds supercells of parent,
     but not child. If number of atoms in child is not divisible by parent,
     mapping algorithm cannot find supercells of the parent
+
+    #TODO: Add support for vacancies
 
     Parameters
     ----------
@@ -315,30 +322,21 @@ def get_properties_json_paths(
         ]
 
 
-# TODO: Currently only works if child_paths is a list of .json files
-# TODO: If child_paths is poscar types it doesn't work, needs implementing Structure.from_poscar
-# TODO: Need to add shorten parent paths argmument
-def map_configurations_onto_parent_structures(
-    child_paths: list[str],
+def get_parent_crystal_structures(
     parent_paths: str | list[str],
-    quiet=False,
-    **kwargs,
-):
-    """Top-level function that constructs child structures,
-    parent structures and maps them onto each other
+) -> list[libcasm.xtal.Prim]:
+    """TODO: Docstring for get_parent_crystal_structures.
 
     Parameters
     ----------
-    child_paths : TODO
     parent_paths : TODO
-    **kwargs : TODO
+     : TODO
 
     Returns
     -------
     TODO
 
     """
-    # sanitize kwargs
     if isinstance(parent_paths, str):
         if parent_paths == "common":
             (
@@ -357,17 +355,41 @@ def map_configurations_onto_parent_structures(
             libcasm.xtal.Prim.from_poscar(parent_path) for parent_path in parent_paths
         ]
 
-    # parent_paths = [os.path.basename(path) for path in parent_paths]
+    return parent_structures
 
-    child_structures = get_child_structures(child_paths)
-    masked_child_structures = mask_child_structure_atom_types(child_structures)
 
-    mapping_results = map_child_structures_onto_parent_structures(
-        parent_structures, masked_child_structures, parent_paths, child_paths, quiet
-    )
-    mapping_results = organize_mapping_results(mapping_results)
+def get_casm_config_name_from_child_path(child_path: str) -> str:
+    """This assumes that the child path is in casm directory
+    style like "*/training_data/SCEL.../*/structure.json"
+    or "*/training_data/SCEL.../*/calctype.*/properties.json"
+    and only return SCEL.../* part
 
-    return mapping_results
+    Returns
+    -------
+    str
+        config name
+
+    """
+
+    if os.path.basename(child_path) == "properties.calc.json":
+        i = 0
+        dirname = child_path
+        while i <= 3:
+            dirname = os.path.dirname(dirname)
+            if i == 0:
+                child_path = child_path.replace(os.path.basename(dirname) + "/", "")
+            i += 1
+
+        config_name = child_path.replace(dirname + "/", "").replace(
+            "/properties.calc.json", ""
+        )
+
+    else:
+        raise RuntimeError(
+            "Should be casm directory styles with file name either structure.json or properties.calc.json"
+        )
+
+    return config_name
 
 
 def default_mapping_options() -> dict:
@@ -390,13 +412,78 @@ def default_mapping_options() -> dict:
     }
 
 
+def default_child_structure_options() -> dict:
+    """Returns a dictionary of default child structure
+    options
+
+    Returns
+    -------
+    dict
+
+    """
+    return {"mask_occupants": True, "shorten_child_names": "casm_style"}
+
+
+# TODO: Currently only works if child_paths is a list of .json files
+# TODO: If child_paths is poscar types it doesn't work, needs implementing Structure.from_poscar
+# TODO: Need to add shorten parent paths argmument
+def map_configurations_onto_parent_structures(
+    child_paths: list[str],
+    parent_paths: str | list[str],
+    **kwargs,
+):
+    """Top-level function that constructs child structures,
+    parent structures and maps them onto each other
+
+    Parameters
+    ----------
+    child_paths : TODO
+    parent_paths : TODO
+    **kwargs : TODO
+
+    Returns
+    -------
+    TODO
+
+    """
+    # sanitize kwargs
+    mapping_options = default_mapping_options()
+    child_structure_options = default_child_structure_options()
+
+    for key, value in kwargs.items():
+        if key == "mapping_options":
+            for mapping_key, mapping_option in value.items():
+                mapping_options[mapping_key] = mapping_option
+
+        if key == "child_structure_options":
+            for child_struc_key, child_option in value.items():
+                child_structure_options[child_struc_key] = child_option
+
+    # parent_paths = [os.path.basename(path) for path in parent_paths]
+
+    parent_structures = get_parent_crystal_structures(parent_paths)
+    child_structures = get_child_structures(child_paths)
+
+    masked_child_structures = mask_child_structure_atom_types(child_structures)
+
+    mapping_results = map_child_structures_onto_parent_structures(
+        parent_structures,
+        masked_child_structures,
+        mapping_options,
+        parent_paths,
+        child_paths,
+    )
+    mapping_results = organize_mapping_results(mapping_results)
+
+    return mapping_results
+
+
 def map_child_structures_onto_parent_structures(
     parent_structures: list[libcasm.xtal.Prim],
     child_structures: list[libcasm.xtal.Structure],
+    mapping_options: dict,
     parent_paths: list[str] = None,
     child_paths: list[str] = None,
-    quiet=True,
-    **kwargs,
 ) -> list[list[list[MappingResult]]]:
     """Cycle through child crystal structures and map each of them
     onto the parent structures. Assumes ``parent_structures`` and
@@ -411,31 +498,40 @@ def map_child_structures_onto_parent_structures(
         List of parent crystal structures as casm ``Prim``
     child_structures : List[libcasm.xtal.Structure]
         List of child crystal structures as casm ``Structure``
-    **kwargs : TODO
 
     Returns
     -------
-    list[list[MappingResult]]
+    list[list[list[[MappingResult]]]]
 
     """
+
     if parent_paths is None:
-        parent_paths = ["not available"] * len(parent_structures)
+        parent_paths = ["unavailable"] * len(parent_structures)
 
     if child_paths is None:
-        child_paths = ["not available"] * len(child_structures)
+        child_paths = ["unavailable"] * len(child_structures)
 
-    # TODO: Sanitize args and kwargs. Think about what to expose to the user
     mapping_results = []
-
     for child_structure, child_path in zip(child_structures, child_paths):
-        child_fg = libcasm.xtal.make_structure_factor_group(child_structure)
+
+        # Make child factor group
+        if mapping_options["use_child_symmetry"] is True:
+            child_fg = libcasm.xtal.make_structure_factor_group(child_structure)
+        else:
+            child_fg = []
 
         mapping_results_for_one_child = []
         for parent_structure, parent_path in zip(parent_structures, parent_paths):
-            # make child structure factor group
-            parent_fg = libcasm.xtal.make_prim_factor_group(parent_structure)
+
+            # make parent factor group
+            if mapping_options["use_parent_symmetry"] is True:
+                parent_fg = libcasm.xtal.make_prim_factor_group(parent_structure)
+            else:
+                parent_fg = []
+
             # map child onto parent
             max_volume = max_vol(parent_structure, child_structure)
+
             if max_volume is not None:
                 results = mappermethods.map_structures(
                     parent_structure,
@@ -443,14 +539,12 @@ def map_child_structures_onto_parent_structures(
                     max_vol=max_volume,
                     prim_factor_group=parent_fg,
                     structure_factor_group=child_fg,
-                    strain_cost_method="symmetry_breaking_strain_cost",
-                    atom_cost_method="symmetry_breaking_atom_cost",
-                    min_cost=-0.0001,
-                    max_cost=0.1,
+                    **mapping_options,
                 )
             else:
                 results = []
 
+            # convert the results to casmam MappingResult object which is
             if len(results) == 0:
                 empty_mapping_result = MappingResult()
                 empty_mapping_result.child_path = child_path
@@ -465,60 +559,11 @@ def map_child_structures_onto_parent_structures(
                     for result in results
                 ]
 
-            if not quiet:
-                print("Finished mapping " + child_path + " to " + parent_path + "...")
-
-            # convert the results to casmam MappingResult object which is
-            # pickle dumpable
             mapping_results_for_one_child.append(casmam_results)
 
         mapping_results.append(mapping_results_for_one_child)
 
     return mapping_results
-
-
-def get_casm_config_name_from_child_path(child_path: str) -> str:
-    """This assumes that the child path is in casm directory
-    style like "*/training_data/SCEL.../*/structure.json"
-    or "*/training_data/SCEL.../*/calctype.*/properties.json"
-    and only return SCEL.../* part
-
-    Returns
-    -------
-    str
-        config name
-
-    """
-    if os.path.basename(child_path) == "structure.json":
-        i = 0
-        dirname = child_path
-        while i <= 2:
-            dirname = os.path.dirname(dirname)
-            i += 1
-
-        config_name = child_path.replace(dirname + "/", "").replace(
-            "/structure.json", ""
-        )
-
-    elif os.path.basename(child_path) == "properties.calc.json":
-        i = 0
-        dirname = child_path
-        while i <= 3:
-            dirname = os.path.dirname(dirname)
-            if i == 0:
-                child_path = child_path.replace(os.path.basename(dirname) + "/", "")
-            i += 1
-
-        config_name = child_path.replace(dirname + "/", "").replace(
-            "/properties.calc.json", ""
-        )
-
-    else:
-        raise RuntimeError(
-            "Should be casm directory styles with file name either structure.json or properties.calc.json"
-        )
-
-    return config_name
 
 
 def organize_mapping_results(
@@ -631,6 +676,11 @@ def find_best_map_and_flag_conflicts(
     total_costs = np.array(
         [mapping_result.total_cost for mapping_result in mapping_results]
     )
+
+    if all([mapping_result.is_dummy() for mapping_result in mapping_results]):
+        empty_mapping_result = MappingResult()
+        empty_mapping_result.child_path = mapping_results[0].child_path
+        return empty_mapping_result, None
 
     best_map_index = np.nanargmin(total_costs)
     best_map = mapping_results[best_map_index]
