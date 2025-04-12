@@ -5,6 +5,7 @@ import casmam
 import numpy as np
 import pandas as pd
 import libcasm.xtal
+from tqdm import tqdm
 import importlib.resources
 import libcasm.mapping.info
 import libcasm.mapping.methods
@@ -367,7 +368,7 @@ def map_child_structures_onto_parent_structures(
     mapping_options.pop("use_parent_symmetry")
 
     mapping_results = []
-    for child_structure in child_structures:
+    for child_structure in tqdm(child_structures, desc="Mapping child structure: "):
         # Make child factor group
         if use_child_symmetry is True:
             child_fg = libcasm.xtal.make_factor_group(child_structure)
@@ -375,7 +376,9 @@ def map_child_structures_onto_parent_structures(
             child_fg = []
 
         mapping_results_for_one_child = []
-        for parent_structure in parent_structures:
+        for parent_structure in tqdm(
+            parent_structures, desc="Mapping one child onto parent: "
+        ):
 
             # make parent factor group
             if use_parent_symmetry is True:
