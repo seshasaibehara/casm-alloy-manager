@@ -13,6 +13,13 @@ setuptools.setup(
     entry_points={
         "console_scripts": ["casm-alloy-manager=casmam.scripts.casm_alloy_manager:main"]
     },
-    install_requires=["numpy", "pandas", "tables", "libcasm-xtal", "libcasm-mapping"],
+    install_requires=[
+        "tqdm",
+        "numpy",
+        "pandas",
+        "tables",
+        "libcasm-xtal",
+        "libcasm-mapping",
+    ],
     python_requires=">=3.7",
 )
