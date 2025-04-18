@@ -56,7 +56,8 @@ def all_parent_crystal_structures_with_paths() -> (
         along with a list of basepath names for crystal structures
 
     """
-    prims_with_names = common_parent_crystal_structures_with_paths()
+    prims, paths = common_parent_crystal_structures_with_paths()
+    prims_with_names = [(prim, path) for prim, path in zip(prims, paths)]
     prims_with_names += [
         (
             libcasm.xtal.Prim.from_poscar(str(file)),
